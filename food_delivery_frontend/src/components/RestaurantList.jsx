@@ -1,23 +1,54 @@
 import React, { useEffect, useState } from 'react';
 import { getRestaurants, resetToSeed } from '../storage/localStore';
+import RestaurantDetail from './RestaurantDetail';
 
 /**
  * RestaurantList
  * A simple, accessible list of restaurants using Ocean Professional theme cues.
- * - Prominent name, with cuisine and rating.
- * - If no data, instructs the user visually.
- * - Reads data synchronously from local storage module.
+ * Now supports selecting a restaurant to view its details and menu.
  */
 // PUBLIC_INTERFACE
 export default function RestaurantList() {
   /** Displays a list of restaurants with name, cuisine, and rating. */
   const [restaurants, setRestaurants] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
 
   useEffect(() => {
     // Ensure seed exists at least once so the list renders on first app run.
     resetToSeed();
     setRestaurants(getRestaurants());
+
+    // Support basic hash routing: #/restaurant/<id>
+    const applyHash = () => {
+      const m = window.location.hash.match(/#\/restaurant\/(\d+)/);
+      if (m && m[1]) {
+        setSelectedId(Number(m[1]));
+      }
+    };
+    applyHash();
+    window.addEventListener('hashchange', applyHash);
+    return () => window.removeEventListener('hashchange', applyHash);
   }, []);
+
+  const goToDetail = (id) => {
+    setSelectedId(id);
+    // Update hash to preserve selection on refresh/back-forward
+    window.location.hash = `#/restaurant/${id}`;
+  };
+
+  const goBackToList = () => {
+    setSelectedId(null);
+    // Clear hash
+    if (window.location.hash.startsWith('#/restaurant/')) {
+      window.location.hash = '#/';
+    } else {
+      window.location.hash = '';
+    }
+  };
+
+  if (selectedId != null) {
+    return <RestaurantDetail restaurantId={selectedId} onBack={goBackToList} />;
+  }
 
   const styles = {
     container: {
@@ -49,7 +80,7 @@ export default function RestaurantList() {
       padding: 16,
       boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
       transition: 'transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease',
-      cursor: 'default',
+      cursor: 'pointer',
     },
     cardHover: {
       transform: 'translateY(-2px)',
@@ -100,15 +131,10 @@ export default function RestaurantList() {
     },
   };
 
-  // Inline hover effect helper
-  const withHover = (baseStyle) => ({
-    ...baseStyle,
-  });
-
-  const handleKeyCard = (e) => {
-    // Future enhancement: allow keyboard navigation/selection
+  const handleKeyCard = (e, id) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
+      goToDetail(id);
     }
   };
 
@@ -125,7 +151,7 @@ export default function RestaurantList() {
       <div style={styles.container}>
         <h1 style={styles.header}>Explore Restaurants</h1>
         <p style={styles.helper}>
-          Browse our curated selection. Tap a restaurant to view its menu in upcoming iterations.
+          Browse our curated selection. Click a restaurant to view its menu.
         </p>
 
         {(!restaurants || restaurants.length === 0) ? (
@@ -139,13 +165,15 @@ export default function RestaurantList() {
                 <li key={r.id} style={{ listStyle: 'none' }}>
                   <article
                     tabIndex={0}
-                    role="article"
-                    aria-label={`${r.name}, ${r.cuisine}, rated ${r.rating}`}
-                    onKeyDown={handleKeyCard}
-                    style={withHover(styles.card)}
+                    role="button"
+                    aria-label={`${r.name}, ${r.cuisine}, rated ${r.rating}. Press Enter to view menu.`}
+                    onKeyDown={(e) => handleKeyCard(e, r.id)}
+                    style={styles.card}
+                    onClick={() => goToDetail(r.id)}
                     onMouseEnter={(e) => Object.assign(e.currentTarget.style, styles.cardHover)}
                     onMouseLeave={(e) => {
                       Object.assign(e.currentTarget.style, styles.card);
+                      e.currentTarget.style.cursor = 'pointer';
                     }}
                   >
                     <header>
