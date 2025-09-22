@@ -1,0 +1,133 @@
+/* Home page specific styles, following assets/homepage_integration_checklist.md */
+
+@import './tokens.css';
+
+.page-canvas {
+  background: var(--bg-canvas);
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: 24px;
+  padding: 48px 56px;
+  width: min(1120px, 100%);
+}
+
+.topnav {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.topnav ul {
+  list-style: none;
+  display: flex;
+  gap: 32px;
+  margin: 0;
+  padding: 0;
+}
+
+.topnav a {
+  color: var(--brand);
+  font-weight: 600;
+  text-decoration: none;
+  padding: 6px 4px;
+  border-radius: 6px;
+  transition: color .2s ease;
+}
+
+.topnav a:hover { color: var(--brand-dark); }
+.topnav a:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  align-items: center;
+  gap: 56px;
+  margin-top: 32px;
+}
+
+.hero h1 {
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--brand);
+  margin: 0 0 16px 0;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.hero p {
+  color: var(--body-text);
+  font-size: 16px;
+  line-height: 1.65;
+  margin: 0 0 22px 0;
+  max-width: 48ch;
+}
+
+.btn-primary {
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: 9999px;
+  padding: 10px 22px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  cursor: pointer;
+  transition: background-color .2s ease;
+}
+
+.btn-primary:hover { background: var(--brand-dark); }
+.btn-primary:focus-visible { outline: 3px solid rgba(239,62,62,.35); outline-offset: 2px; }
+
+.hero-illustration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-illustration img {
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+}
+
+/* Ocean Professional call-to-action section to bridge to RestaurantList */
+.cta-section {
+  margin-top: 40px;
+  border-top: 1px solid rgba(17,24,39,0.06);
+  padding-top: 24px;
+}
+.cta-panel {
+  background: linear-gradient(180deg, rgba(37,99,235,0.08), #ffffff);
+  border: 1px solid rgba(37,99,235,0.25);
+  border-radius: 16px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #0f172a;
+  box-shadow: 0 4px 14px rgba(37,99,235,0.08);
+}
+.cta-panel strong {
+  color: #1e3a8a;
+}
+
+/* Responsive rules */
+@media (max-width: 991px) {
+  .card { padding: 40px; }
+  .hero { grid-template-columns: 1fr; gap: 32px; text-align: center; }
+  .hero p { margin-left: auto; margin-right: auto; }
+  .topnav { justify-content: center; }
+}
+
+@media (max-width: 575px) {
+  .card { padding: 28px 20px; }
+  .hero h1 { font-size: 34px; }
+  .topnav ul { gap: 16px; }
+}

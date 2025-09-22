@@ -1,0 +1,20 @@
+:root {
+  /* Extracted from assets/style_guide.md and homepage_design_notes.md */
+  --bg-canvas: #EF3E3E;       /* red canvas/background */
+  --card-bg: #FFFFFF;         /* white card surfaces */
+  --brand: #EF3E3E;           /* primary brand red */
+  --brand-dark: #D93232;      /* hover/active red */
+  --text-strong: #1A1F26;     /* strong black for titles when not red */
+  --body-text: #5F6B76;       /* muted paragraph */
+  --muted: #98A2AD;           /* optional secondary text */
+  --accent-yellow: #F7C04A;   /* burger highlight */
+  --accent-orange: #F39A3C;   /* burger secondary */
+  --ui-cloud: #E84A4A;        /* decorative red variant */
+  --button-text: #FFFFFF;
+
+  /* Ocean Professional theme accents (blue & amber) for app chrome re-use when needed) */
+  --op-primary: #2563EB; /* Ocean blue */
+  --op-amber: #F59E0B;
+  --surface: #ffffff;
+  --text: #111827;
+}

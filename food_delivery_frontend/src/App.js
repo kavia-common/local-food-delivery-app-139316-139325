@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import Home from './pages/Home';
 import RestaurantList from './components/RestaurantList';
 
 // PUBLIC_INTERFACE
 function App() {
+  /**
+   * App root: shows the designed HomePage first, then the restaurant list section.
+   * Keeps Ocean Professional header toggle for theme demo.
+   */
   const [theme, setTheme] = useState('light');
 
   // Apply theme to document element
@@ -18,6 +23,7 @@ function App() {
 
   return (
     <div className="App">
+      {/* Ocean Professional minimal app chrome */}
       <header
         style={{
           background: theme === 'light' ? '#f9fafb' : 'var(--bg-secondary)',
@@ -30,7 +36,7 @@ function App() {
           position: 'sticky',
           top: 0,
           zIndex: 10
-        }}
+          }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div
@@ -54,6 +60,13 @@ function App() {
         </button>
       </header>
 
+      {/* Homepage hero per design */}
+      <Home onExplore={() => { /* no-op; scrolling handled in component */ }} />
+
+      {/* Anchor bridge so CTA can scroll here */}
+      <div id="restaurant-list" />
+
+      {/* Continue with the app content: Restaurant directory */}
       <RestaurantList />
     </div>
   );
