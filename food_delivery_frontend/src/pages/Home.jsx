@@ -76,7 +76,7 @@ export default function Home({ onExplore }) {
           title="Food Delivery"
           text="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
           ctaLabel="CONTACT"
-          illustrationSrc="/assets/illustrations/hero-food-delivery.svg"
+          illustrationSrc="/assets/hero-home.jpg"
           onCtaClick={handleContact}
         />
 
