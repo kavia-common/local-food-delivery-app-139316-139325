@@ -101,6 +101,23 @@ export default function RestaurantList() {
       gap: 8,
       flexWrap: 'wrap',
     },
+    imageWrap: {
+      position: 'relative',
+      width: '100%',
+      aspectRatio: '16 / 9',
+      overflow: 'hidden',
+      borderRadius: 10,
+      background: 'linear-gradient(180deg, rgba(37,99,235,0.06), rgba(255,255,255,0.8))',
+      border: '1px solid rgba(37,99,235,0.18)',
+      boxShadow: '0 6px 14px rgba(37,99,235,0.08)',
+      marginBottom: 12
+    },
+    image: {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      display: 'block'
+    },
     chip: {
       display: 'inline-flex',
       alignItems: 'center',
@@ -176,6 +193,14 @@ export default function RestaurantList() {
                       e.currentTarget.style.cursor = 'pointer';
                     }}
                   >
+                    <div style={styles.imageWrap} aria-hidden>
+                      <img
+                        src={r.image || 'https://images.unsplash.com/photo-1498656307815-132743b76b03?q=80&w=1200&auto=format&fit=crop'}
+                        alt=""
+                        style={styles.image}
+                        loading="lazy"
+                      />
+                    </div>
                     <header>
                       <h2 style={styles.name}>{r.name}</h2>
                     </header>

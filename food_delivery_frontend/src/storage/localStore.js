@@ -86,16 +86,57 @@
    ];
 
    const seedRestaurants = [
-     { id: 1, name: 'Pasta Palace', cuisine: 'Italian', rating: 4.6 },
-     { id: 2, name: 'Sushi Central', cuisine: 'Japanese', rating: 4.8 }
+     {
+       id: 1,
+       name: 'Pasta Palace',
+       cuisine: 'Italian',
+       rating: 4.6,
+       // Ocean Professional style: calm blue-toned food imagery
+       image: 'https://images.unsplash.com/photo-1523986371872-9d3ba2e2f642?q=80&w=1200&auto=format&fit=crop'
+     },
+     {
+       id: 2,
+       name: 'Sushi Central',
+       cuisine: 'Japanese',
+       rating: 4.8,
+       image: 'https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=1200&auto=format&fit=crop'
+     }
    ];
 
    const seedMenus = [
      // Each menu item references a restaurantId
-     { id: 1, restaurantId: 1, name: 'Spaghetti Carbonara', price: 12.99, description: 'Creamy sauce, pancetta, pecorino.' },
-     { id: 2, restaurantId: 1, name: 'Penne Arrabbiata', price: 10.5, description: 'Spicy tomato sauce with garlic and chili.' },
-     { id: 3, restaurantId: 2, name: 'Salmon Nigiri (2 pcs)', price: 6.0, description: 'Fresh salmon over seasoned rice.' },
-     { id: 4, restaurantId: 2, name: 'California Roll', price: 7.5, description: 'Crab, avocado, cucumber.' }
+     {
+       id: 1,
+       restaurantId: 1,
+       name: 'Spaghetti Carbonara',
+       price: 12.99,
+       description: 'Creamy sauce, pancetta, pecorino.',
+       image: 'https://images.unsplash.com/photo-1529042410759-befb1204b468?q=80&w=1200&auto=format&fit=crop'
+     },
+     {
+       id: 2,
+       restaurantId: 1,
+       name: 'Penne Arrabbiata',
+       price: 10.5,
+       description: 'Spicy tomato sauce with garlic and chili.',
+       image: 'https://images.unsplash.com/photo-1523986371872-9d3ba2e2f642?q=80&w=1200&auto=format&fit=crop'
+     },
+     {
+       id: 3,
+       restaurantId: 2,
+       name: 'Salmon Nigiri (2 pcs)',
+       price: 6.0,
+       description: 'Fresh salmon over seasoned rice.',
+       image: 'https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=1200&auto=format&fit=crop'
+     },
+     {
+       id: 4,
+       restaurantId: 2,
+       name: 'California Roll',
+       price: 7.5,
+       description: 'Crab, avocado, cucumber.',
+       image: 'https://images.unsplash.com/photo-1617191518000-08fc1e7233db?q=80&w=1200&auto=format&fit=crop'
+     }
    ];
 
    const seedOrders = [
@@ -230,7 +271,7 @@
  export function createRestaurant(restaurant) {
    /**
     * Creates a new restaurant.
-    * restaurant: { name, cuisine, rating }
+    * restaurant: { name, cuisine, rating, image? }
     * Returns the created restaurant with id.
     */
    let created = null;
@@ -240,7 +281,8 @@
        id,
        name: restaurant.name,
        cuisine: restaurant.cuisine || '',
-       rating: typeof restaurant.rating === 'number' ? restaurant.rating : 0
+       rating: typeof restaurant.rating === 'number' ? restaurant.rating : 0,
+       ...(restaurant.image ? { image: String(restaurant.image) } : {})
      };
      return { ...state, restaurants: [...state.restaurants, created] };
    });
@@ -313,7 +355,7 @@
  export function createMenuItem(menuItem) {
    /**
     * Creates a new menu item.
-    * menuItem: { restaurantId, name, price, description }
+    * menuItem: { restaurantId, name, price, description, image? }
     * Returns the created item with id.
     */
    let created = null;
@@ -324,7 +366,8 @@
        restaurantId: Number(menuItem.restaurantId),
        name: menuItem.name,
        price: Number(menuItem.price),
-       description: menuItem.description || ''
+       description: menuItem.description || '',
+       ...(menuItem.image ? { image: String(menuItem.image) } : {})
      };
      return { ...state, menus: [...state.menus, created] };
    });

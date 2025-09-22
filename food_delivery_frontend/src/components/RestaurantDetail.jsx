@@ -97,6 +97,23 @@ export default function RestaurantDetail({ restaurantId, onBack }) {
       boxShadow: '0 4px 14px rgba(37,99,235,0.08)',
       marginBottom: 20,
     },
+    heroWrap: {
+      position: 'relative',
+      width: '100%',
+      aspectRatio: '16 / 9',
+      overflow: 'hidden',
+      borderRadius: 14,
+      background: 'linear-gradient(180deg, rgba(37,99,235,0.06), rgba(255,255,255,0.8))',
+      border: '1px solid rgba(37,99,235,0.18)',
+      boxShadow: '0 8px 20px rgba(37,99,235,0.10)',
+      marginBottom: 16
+    },
+    heroImg: {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      display: 'block'
+    },
     title: {
       margin: 0,
       color: '#111827',
@@ -152,6 +169,29 @@ export default function RestaurantDetail({ restaurantId, onBack }) {
       padding: 14,
       boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
       transition: 'transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease',
+      display: 'grid',
+      gridTemplateColumns: '120px 1fr',
+      gap: 12
+    },
+    menuImgWrap: {
+      position: 'relative',
+      width: '100%',
+      aspectRatio: '1 / 1',
+      overflow: 'hidden',
+      borderRadius: 10,
+      background: 'linear-gradient(180deg, rgba(37,99,235,0.06), rgba(255,255,255,0.8))',
+      border: '1px solid rgba(37,99,235,0.18)'
+    },
+    menuImg: {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      display: 'block'
+    },
+    menuContentCol: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 6
     },
     menuNameRow: {
       display: 'flex',
@@ -181,6 +221,45 @@ export default function RestaurantDetail({ restaurantId, onBack }) {
       color: '#4b5563',
       fontSize: 13,
       lineHeight: 1.5,
+    },
+    controlRow: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      flexWrap: 'wrap',
+      marginTop: 10
+    },
+    select: {
+      padding: '6px 8px',
+      borderRadius: 8,
+      border: '1px solid rgba(17,24,39,0.15)',
+      background: '#fff',
+      fontSize: 12
+    },
+    checkboxGroup: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      flexWrap: 'wrap'
+    },
+    qtyInput: {
+      width: 64,
+      padding: '6px 8px',
+      borderRadius: 8,
+      border: '1px solid rgba(17,24,39,0.15)'
+    },
+    addBtn: {
+      marginLeft: 'auto',
+      background: '#2563EB',
+      color: '#fff',
+      border: 'none',
+      borderRadius: 10,
+      padding: '8px 12px',
+      fontSize: 13,
+      fontWeight: 700,
+      boxShadow: '0 4px 12px rgba(37,99,235,0.20)',
+      cursor: 'pointer',
+      transition: 'opacity 0.2s ease'
     },
     empty: {
       background: '#ffffff',
@@ -235,6 +314,16 @@ export default function RestaurantDetail({ restaurantId, onBack }) {
         </button>
 
         <section style={styles.headerCard}>
+          {(
+            <div style={styles.heroWrap} aria-hidden>
+              <img
+                src={restaurant.image || 'https://images.unsplash.com/photo-1498656307815-132743b76b03?q=80&w=1200&auto=format&fit=crop'}
+                alt=""
+                style={styles.heroImg}
+                loading="lazy"
+              />
+            </div>
+          )}
           <h1 style={styles.title}>{restaurant.name}</h1>
           <div style={styles.metaRow}>
             <span style={styles.chip} aria-label={`Cuisine ${restaurant.cuisine}`}>🍽️ {restaurant.cuisine}</span>
@@ -273,13 +362,22 @@ export default function RestaurantDetail({ restaurantId, onBack }) {
                       e.currentTarget.style.borderColor = 'rgba(17,24,39,0.06)';
                     }}
                   >
-                    <div style={styles.menuNameRow}>
-                      <h3 style={styles.menuName}>{item.name}</h3>
-                      <span style={styles.priceTag}>${Number(item.price).toFixed(2)}</span>
+                    <div style={styles.menuImgWrap} aria-hidden>
+                      <img
+                        src={item.image || 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop'}
+                        alt=""
+                        style={styles.menuImg}
+                        loading="lazy"
+                      />
                     </div>
-                    {item.description ? (
-                      <p style={styles.menuDesc}>{item.description}</p>
-                    ) : null}
+                    <div style={styles.menuContentCol}>
+                      <div style={styles.menuNameRow}>
+                        <h3 style={styles.menuName}>{item.name}</h3>
+                        <span style={styles.priceTag}>${Number(item.price).toFixed(2)}</span>
+                      </div>
+                      {item.description ? (
+                        <p style={styles.menuDesc}>{item.description}</p>
+                      ) : null}
 
                     <div style={styles.controlRow} aria-label="Customization options">
                       {/* Size select if provided */}
@@ -408,6 +506,7 @@ export default function RestaurantDetail({ restaurantId, onBack }) {
                       >
                         Add to Cart
                       </button>
+                    </div>
                     </div>
                   </article>
                 </li>
