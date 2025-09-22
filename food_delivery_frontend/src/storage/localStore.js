@@ -14,6 +14,30 @@
   */
 
  const STORAGE_KEY = 'fd_app_state_v1';
+ // Local cart storage key (separate from app state for simplicity and to avoid schema churn)
+ const CART_KEY = 'fd_cart_v1';
+
+ // INTERNAL: read the cart array
+ function loadCart() {
+   try {
+     const raw = window.localStorage.getItem(CART_KEY);
+     if (!raw) return [];
+     const parsed = JSON.parse(raw);
+     return Array.isArray(parsed) ? parsed : [];
+   } catch (e) {
+     console.warn('Failed to parse cart; resetting.', e);
+     return [];
+   }
+ }
+
+ // INTERNAL: persist the cart array
+ function saveCart(items) {
+   try {
+     window.localStorage.setItem(CART_KEY, JSON.stringify(Array.isArray(items) ? items : []));
+   } catch (e) {
+     console.error('Failed to save cart.', e);
+   }
+ }
 
  // Entity collections within the single state object:
  // {
@@ -438,6 +462,96 @@
  export function getAppState() {
    /** Returns the entire app state snapshot. */
    return getState();
+ }
+
+ // ---------------- Cart helpers ----------------
+
+ // PUBLIC_INTERFACE
+ export function getCart() {
+   /** Returns the current cart array from localStorage. */
+   return loadCart().slice();
+ }
+
+ // PUBLIC_INTERFACE
+ export function clearCart() {
+   /** Clears all items in the cart and returns an empty array. */
+   saveCart([]);
+   return [];
+ }
+
+ // PUBLIC_INTERFACE
+ export function addToCart(payload) {
+   /**
+    * Adds an item to the cart with simple merging logic.
+    * payload: {
+    *   restaurantId: number,
+    *   menuItemId: number,
+    *   name: string,
+    *   unitPrice: number,
+    *   quantity: number,
+    *   size?: string,                  // optional size variant
+    *   addons?: string[]               // optional add-on identifiers/names
+    * }
+    * Returns the updated cart array.
+    *
+    * Merge rule:
+    * - Items are considered the same if restaurantId, menuItemId, size, and addons (set-equal)
+    *   all match. If so, quantity is incremented; otherwise, a new line is appended.
+    */
+   const {
+     restaurantId,
+     menuItemId,
+     name,
+     unitPrice,
+     quantity,
+     size = undefined,
+     addons = []
+   } = payload || {};
+
+   const qty = Math.max(1, Number(quantity) || 1);
+   const price = Number(unitPrice) || 0;
+
+   const cart = loadCart();
+
+   // Normalize addons for comparison (sorted string values)
+   const normAddons = Array.isArray(addons) ? [...addons].map(String).sort() : [];
+
+   const sameItemIndex = cart.findIndex((it) => {
+     if (Number(it.restaurantId) !== Number(restaurantId)) return false;
+     if (Number(it.menuItemId) !== Number(menuItemId)) return false;
+     if ((it.size || undefined) !== (size || undefined)) return false;
+
+     const a1 = Array.isArray(it.addons) ? [...it.addons].map(String).sort() : [];
+     if (a1.length !== normAddons.length) return false;
+     for (let i = 0; i < a1.length; i++) {
+       if (a1[i] !== normAddons[i]) return false;
+     }
+     return true;
+   });
+
+   if (sameItemIndex !== -1) {
+     const updated = cart.slice();
+     const line = { ...updated[sameItemIndex] };
+     line.quantity = Math.max(1, Number(line.quantity) || 1) + qty;
+     // unitPrice remains same; total calculated by consumers
+     updated[sameItemIndex] = line;
+     saveCart(updated);
+     return updated;
+   }
+
+   const newLine = {
+     restaurantId: Number(restaurantId),
+     menuItemId: Number(menuItemId),
+     name: String(name || ''),
+     unitPrice: Number(price),
+     quantity: qty,
+     ...(size ? { size } : {}),
+     ...(normAddons.length ? { addons: normAddons } : {})
+   };
+
+   const updated = [...cart, newLine];
+   saveCart(updated);
+   return updated;
  }
 
  // Example usage notes:

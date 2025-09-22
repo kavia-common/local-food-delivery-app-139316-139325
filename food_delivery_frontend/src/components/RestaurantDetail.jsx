@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { getRestaurantById, getMenusByRestaurant } from '../storage/localStore';
+import React, { useMemo, useState } from 'react';
+import { getRestaurantById, getMenusByRestaurant, addToCart } from '../storage/localStore';
 
 /**
  * RestaurantDetail
@@ -18,6 +18,50 @@ export default function RestaurantDetail({ restaurantId, onBack }) {
    */
   const restaurant = useMemo(() => getRestaurantById(restaurantId), [restaurantId]);
   const menu = useMemo(() => getMenusByRestaurant(restaurantId), [restaurantId]);
+
+  // Generate simple options schema for items that do not yet define options.
+  // This keeps UI extensible. If an item already has item.options, we respect it.
+  const enhanceItem = (it) => {
+    // If item already includes options, return as-is
+    if (it && it.options) return it;
+    // Sample: If cuisine hints, provide sizes/addons as examples
+    const base = { ...it };
+    const lowerName = (it?.name || '').toLowerCase();
+    const options = {};
+
+    // Add size options for common items
+    if (lowerName.includes('roll') || lowerName.includes('nigiri') || lowerName.includes('spaghetti') || lowerName.includes('penne')) {
+      options.size = {
+        type: 'select',
+        label: 'Size',
+        values: ['Regular', 'Large']
+      };
+    }
+
+    // Simple add-ons example
+    if (lowerName.includes('spaghetti') || lowerName.includes('penne')) {
+      options.addons = {
+        type: 'multi',
+        label: 'Add-ons',
+        values: ['Extra Cheese', 'Garlic Bread']
+      };
+    }
+    if (lowerName.includes('roll')) {
+      options.addons = {
+        type: 'multi',
+        label: 'Add-ons',
+        values: ['Extra Wasabi', 'Ginger']
+      };
+    }
+
+    // Always allow quantity control on UI (handled separately)
+    return { ...base, options: Object.keys(options).length ? options : undefined };
+  };
+
+  const enhancedMenu = useMemo(() => (menu || []).map(enhanceItem), [menu]);
+
+  // Local UI state map: { [menuItemId]: { quantity, size, addons:Set } }
+  const [selections, setSelections] = useState({});
 
   const styles = {
     page: {
@@ -214,7 +258,7 @@ export default function RestaurantDetail({ restaurantId, onBack }) {
             </div>
           ) : (
             <ul style={styles.menuList}>
-              {menu.map((item) => (
+              {enhancedMenu.map((item) => (
                 <li key={item.id} style={{ listStyle: 'none' }}>
                   <article
                     style={styles.menuCard}
@@ -236,6 +280,135 @@ export default function RestaurantDetail({ restaurantId, onBack }) {
                     {item.description ? (
                       <p style={styles.menuDesc}>{item.description}</p>
                     ) : null}
+
+                    <div style={styles.controlRow} aria-label="Customization options">
+                      {/* Size select if provided */}
+                      {item.options && item.options.size && item.options.size.values && (
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 12, color: '#374151', fontWeight: 700 }}>
+                            {item.options.size.label || 'Size'}:
+                          </span>
+                          <select
+                            style={styles.select}
+                            value={(selections[item.id]?.size) || item.options.size.values[0]}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setSelections((prev) => ({
+                                ...prev,
+                                [item.id]: {
+                                  ...(prev[item.id] || {}),
+                                  size: v,
+                                  // keep qty/addons if present
+                                  quantity: Math.max(1, Number(prev[item.id]?.quantity) || 1),
+                                  addons: prev[item.id]?.addons || new Set()
+                                }
+                              }));
+                            }}
+                          >
+                            {item.options.size.values.map((opt) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
+
+                      {/* Add-ons checkboxes if provided */}
+                      {item.options && item.options.addons && item.options.addons.values && (
+                        <div style={styles.checkboxGroup} role="group" aria-label={item.options.addons.label || 'Add-ons'}>
+                          <span style={{ fontSize: 12, color: '#374151', fontWeight: 700 }}>
+                            {item.options.addons.label || 'Add-ons'}:
+                          </span>
+                          {item.options.addons.values.map((ad) => {
+                            const selectedSet = selections[item.id]?.addons || new Set();
+                            const checked = selectedSet.has(ad);
+                            return (
+                              <label key={ad} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={(e) => {
+                                    setSelections((prev) => {
+                                      const existing = prev[item.id] || {};
+                                      const nextSet = new Set(existing.addons || []);
+                                      if (e.target.checked) nextSet.add(ad);
+                                      else nextSet.delete(ad);
+                                      return {
+                                        ...prev,
+                                        [item.id]: {
+                                          ...existing,
+                                          addons: nextSet,
+                                          quantity: Math.max(1, Number(existing.quantity) || 1),
+                                          size: existing.size || (item.options?.size?.values?.[0])
+                                        }
+                                      };
+                                    });
+                                  }}
+                                />
+                                {ad}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Quantity input always */}
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: 12, color: '#374151', fontWeight: 700 }}>Qty:</span>
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          style={styles.qtyInput}
+                          value={Math.max(1, Number(selections[item.id]?.quantity) || 1)}
+                          onChange={(e) => {
+                            const v = Math.max(1, Number(e.target.value) || 1);
+                            setSelections((prev) => ({
+                              ...prev,
+                              [item.id]: {
+                                ...(prev[item.id] || {}),
+                                quantity: v,
+                                addons: prev[item.id]?.addons || new Set(),
+                                size: prev[item.id]?.size || (item.options?.size?.values?.[0])
+                              }
+                            }));
+                          }}
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        style={styles.addBtn}
+                        onClick={() => {
+                          const sel = selections[item.id] || {};
+                          const qty = Math.max(1, Number(sel.quantity) || 1);
+                          const size = sel.size || (item.options?.size?.values?.[0]);
+                          const addonsArray = sel.addons ? Array.from(sel.addons) : [];
+
+                          // Basic validation: ensure numbers and positive quantity
+                          if (qty < 1 || Number.isNaN(qty)) {
+                            window.alert('Please enter a valid quantity.');
+                            return;
+                          }
+
+                          addToCart({
+                            restaurantId: restaurant.id,
+                            menuItemId: item.id,
+                            name: item.name,
+                            unitPrice: Number(item.price) || 0,
+                            quantity: qty,
+                            ...(size ? { size } : {}),
+                            ...(addonsArray.length ? { addons: addonsArray } : {})
+                          });
+
+                          // Lightweight confirmation
+                          window.alert(`Added ${qty} x ${item.name}${size ? ' (' + size + ')' : ''} to cart.`);
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.95'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+                      >
+                        Add to Cart
+                      </button>
+                    </div>
                   </article>
                 </li>
               ))}
