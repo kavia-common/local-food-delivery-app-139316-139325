@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import '../styles/home.css';
 import { getRestaurantById, getMenusByRestaurant, addToCart } from '../storage/localStore';
 
 /**
@@ -8,8 +9,9 @@ import { getRestaurantById, getMenusByRestaurant, addToCart } from '../storage/l
  * - Prominent name & cuisine
  * - Stats chips (rating, dish count, price range)
  * - Visually separated sections (About, Menu)
- * - Styled menu grid with animated cards
- * - Subtle transitions and reveal-on-scroll
+ * - Styled menu grid with structured, accessible cards
+ * - Ocean-themed buttons with clear hover/disabled states and subtle feedback
+ * - Optional ribbons/tags on images (e.g., Best Seller, New)
  * - Accessible and responsive layout
  */
 // PUBLIC_INTERFACE
@@ -21,16 +23,25 @@ export default function RestaurantDetail({ restaurantId, onBack }) {
    * - onBack: function to call when the user wants to go back to the list
    */
   const restaurant = useMemo(() => getRestaurantById(restaurantId), [restaurantId]);
-  const menu = useMemo(() => getMenusByRestaurant(restaurantId), [restaurantId]);
+  const rawMenu = useMemo(() => getMenusByRestaurant(restaurantId), [restaurantId]);
 
-  // Generate simple options schema for items that do not yet define options.
+  // Generate options schema and optional ribbon tag for items without options/tags.
   const enhanceItem = (it) => {
-    if (it && it.options) return it;
     const base = { ...it };
     const lowerName = (it?.name || '').toLowerCase();
-    const options = {};
 
-    // Add size options for common items
+    // Optional ribbons/tags heuristic: Sushi items as Best Seller, Pasta as New
+    if (!base.tag) {
+      if (lowerName.includes('roll') || lowerName.includes('nigiri')) {
+        base.tag = { label: 'Best Seller', tone: 'amber' };
+      } else if (lowerName.includes('spaghetti') || lowerName.includes('penne')) {
+        base.tag = { label: 'New', tone: 'blue' };
+      }
+    }
+
+    if (it && it.options) return base;
+
+    const options = {};
     if (
       lowerName.includes('roll') ||
       lowerName.includes('nigiri') ||
@@ -40,43 +51,48 @@ export default function RestaurantDetail({ restaurantId, onBack }) {
       options.size = {
         type: 'select',
         label: 'Size',
-        values: ['Regular', 'Large']
+        values: ['Regular', 'Large'],
       };
     }
 
-    // Simple add-ons example
     if (lowerName.includes('spaghetti') || lowerName.includes('penne')) {
       options.addons = {
         type: 'multi',
         label: 'Add-ons',
-        values: ['Extra Cheese', 'Garlic Bread']
+        values: ['Extra Cheese', 'Garlic Bread'],
       };
     }
     if (lowerName.includes('roll')) {
       options.addons = {
         type: 'multi',
         label: 'Add-ons',
-        values: ['Extra Wasabi', 'Ginger']
+        values: ['Extra Wasabi', 'Ginger'],
       };
     }
 
     return { ...base, options: Object.keys(options).length ? options : undefined };
   };
 
-  const enhancedMenu = useMemo(() => (menu || []).map(enhanceItem), [menu]);
+  const menu = useMemo(() => (rawMenu || []).map(enhanceItem), [rawMenu]);
 
   // Stats helpers
-  const dishesCount = enhancedMenu.length;
+  const dishesCount = menu.length;
   const priceStats = useMemo(() => {
-    const prices = enhancedMenu.map((i) => Number(i.price) || 0).filter((n) => !Number.isNaN(n));
+    const prices = menu.map((i) => Number(i.price) || 0).filter((n) => !Number.isNaN(n));
     if (!prices.length) return null;
     const min = Math.min(...prices);
     const max = Math.max(...prices);
     return { min, max, label: `$${min.toFixed(2)}–$${max.toFixed(2)}` };
-  }, [enhancedMenu]);
+  }, [menu]);
 
-  // Local UI state map: { [menuItemId]: { quantity, size, addons:Set } }
+  // Local UI state maps
+  // selections: { [menuItemId]: { quantity, size, addons:Set } }
   const [selections, setSelections] = useState({});
+  // customization panel open state
+  const [openCustom, setOpenCustom] = useState({}); // { [menuItemId]: boolean }
+  // add-to-cart transient feedback state
+  const [adding, setAdding] = useState({}); // { [menuItemId]: boolean }
+  const [announce, setAnnounce] = useState(''); // aria-live message
 
   // Reveal-on-scroll within this component
   const rootRef = useRef(null);
@@ -110,6 +126,7 @@ export default function RestaurantDetail({ restaurantId, onBack }) {
     return () => io.disconnect();
   }, [restaurantId]);
 
+  // Inline styles for page sections (kept minimal; card/button/menu handled via CSS classes)
   const styles = {
     page: {
       background: '#f9fafb',
@@ -153,7 +170,7 @@ export default function RestaurantDetail({ restaurantId, onBack }) {
     heroWrap: {
       position: 'relative',
       width: '100%',
-      aspectRatio: '21 / 9', // Larger banner
+      aspectRatio: '21 / 9',
       overflow: 'hidden',
       background: 'linear-gradient(180deg, rgba(37,99,235,0.06), rgba(255,255,255,0.8))',
       borderBottom: '1px solid rgba(37,99,235,0.18)',
@@ -210,11 +227,6 @@ export default function RestaurantDetail({ restaurantId, onBack }) {
       color: '#0f172a',
       boxShadow: '0 2px 6px rgba(0,0,0,0.10)',
     },
-    chipAmber: {
-      background: 'linear-gradient(180deg, rgba(245,158,11,0.12), #ffffff)',
-      border: '1px solid rgba(245,158,11,0.35)',
-      color: '#7c2d12',
-    },
     chipInverted: {
       background: 'rgba(255,255,255,0.15)',
       border: '1px solid rgba(255,255,255,0.45)',
@@ -252,111 +264,6 @@ export default function RestaurantDetail({ restaurantId, onBack }) {
       color: '#374151',
       fontSize: 14,
       lineHeight: 1.55,
-    },
-    menuList: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-      gap: 16,
-      marginTop: 12,
-    },
-    menuCard: {
-      background: '#ffffff',
-      border: '1px solid rgba(17,24,39,0.06)',
-      borderRadius: 14,
-      padding: 14,
-      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-      transition: 'transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease',
-      display: 'grid',
-      gridTemplateColumns: '120px 1fr',
-      gap: 12
-    },
-    menuImgWrap: {
-      position: 'relative',
-      width: '100%',
-      aspectRatio: '1 / 1',
-      overflow: 'hidden',
-      borderRadius: 10,
-      background: 'linear-gradient(180deg, rgba(37,99,235,0.06), rgba(255,255,255,0.8))',
-      border: '1px solid rgba(37,99,235,0.18)',
-    },
-    menuImg: {
-      width: '100%',
-      height: '100%',
-      objectFit: 'cover',
-      display: 'block'
-    },
-    menuContentCol: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 6
-    },
-    menuNameRow: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 8,
-      marginBottom: 6,
-    },
-    menuName: {
-      margin: 0,
-      color: '#111827',
-      fontSize: 16,
-      fontWeight: 800,
-    },
-    priceTag: {
-      background: 'linear-gradient(180deg, rgba(37,99,235,0.08), #ffffff)',
-      border: '1px solid rgba(37,99,235,0.25)',
-      color: '#1e3a8a',
-      borderRadius: 999,
-      padding: '4px 10px',
-      fontSize: 12,
-      fontWeight: 800,
-      whiteSpace: 'nowrap',
-    },
-    menuDesc: {
-      margin: 0,
-      color: '#4b5563',
-      fontSize: 13,
-      lineHeight: 1.5,
-    },
-    controlRow: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: 10,
-      flexWrap: 'wrap',
-      marginTop: 10
-    },
-    select: {
-      padding: '6px 8px',
-      borderRadius: 8,
-      border: '1px solid rgba(17,24,39,0.15)',
-      background: '#fff',
-      fontSize: 12
-    },
-    checkboxGroup: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: 8,
-      flexWrap: 'wrap'
-    },
-    qtyInput: {
-      width: 64,
-      padding: '6px 8px',
-      borderRadius: 8,
-      border: '1px solid rgba(17,24,39,0.15)'
-    },
-    addBtn: {
-      marginLeft: 'auto',
-      background: '#2563EB',
-      color: '#fff',
-      border: 'none',
-      borderRadius: 10,
-      padding: '8px 12px',
-      fontSize: 13,
-      fontWeight: 800,
-      boxShadow: '0 6px 16px rgba(37,99,235,0.22)',
-      cursor: 'pointer',
-      transition: 'transform .08s ease, opacity 0.2s ease'
     },
     empty: {
       background: '#ffffff',
@@ -399,6 +306,87 @@ export default function RestaurantDetail({ restaurantId, onBack }) {
   const bannerSrc =
     restaurant.image ||
     'https://images.unsplash.com/photo-1498656307815-132743b76b03?q=80&w=1200&auto=format&fit=crop';
+
+  // Handlers
+  const toggleCustomize = (id) => {
+    setOpenCustom((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const setQty = (item, v) => {
+    const coerced = Math.max(1, Number(v) || 1);
+    setSelections((prev) => ({
+      ...prev,
+      [item.id]: {
+        ...(prev[item.id] || {}),
+        quantity: coerced,
+        addons: prev[item.id]?.addons || new Set(),
+        size: prev[item.id]?.size || (item.options?.size?.values?.[0]),
+      },
+    }));
+  };
+
+  const setSize = (item, size) => {
+    setSelections((prev) => ({
+      ...prev,
+      [item.id]: {
+        ...(prev[item.id] || {}),
+        size,
+        quantity: Math.max(1, Number(prev[item.id]?.quantity) || 1),
+        addons: prev[item.id]?.addons || new Set(),
+      },
+    }));
+  };
+
+  const toggleAddon = (item, ad, checked) => {
+    setSelections((prev) => {
+      const existing = prev[item.id] || {};
+      const nextSet = new Set(existing.addons || []);
+      if (checked) nextSet.add(ad);
+      else nextSet.delete(ad);
+      return {
+        ...prev,
+        [item.id]: {
+          ...existing,
+          addons: nextSet,
+          quantity: Math.max(1, Number(existing.quantity) || 1),
+          size: existing.size || (item.options?.size?.values?.[0]),
+        },
+      };
+    });
+  };
+
+  const onAddToCart = (e, item) => {
+    const sel = selections[item.id] || {};
+    const qty = Math.max(1, Number(sel.quantity) || 1);
+    const size = sel.size || (item.options?.size?.values?.[0]);
+    const addonsArray = sel.addons ? Array.from(sel.addons) : [];
+
+    if (qty < 1 || Number.isNaN(qty)) {
+      window.alert('Please enter a valid quantity.');
+      return;
+    }
+
+    // Subtle button feedback and disabled state
+    setAdding((prev) => ({ ...prev, [item.id]: true }));
+    e.currentTarget.classList.add('pulse-once');
+
+    addToCart({
+      restaurantId: restaurant.id,
+      menuItemId: item.id,
+      name: item.name,
+      unitPrice: Number(item.price) || 0,
+      quantity: qty,
+      ...(size ? { size } : {}),
+      ...(addonsArray.length ? { addons: addonsArray } : {}),
+    });
+
+    setAnnounce(`Added ${qty} × ${item.name}${size ? ` (${size})` : ''} to cart.`);
+    // Brief reset for feedback
+    setTimeout(() => {
+      setAdding((prev) => ({ ...prev, [item.id]: false }));
+      e.currentTarget.classList.remove('pulse-once');
+    }, 900);
+  };
 
   return (
     <main aria-label="Restaurant details" style={styles.page} ref={rootRef}>
@@ -511,184 +499,147 @@ export default function RestaurantDetail({ restaurantId, onBack }) {
               No menu items are available for this restaurant yet.
             </div>
           ) : (
-            <ul style={styles.menuList} aria-label="Menu item list">
-              {enhancedMenu.map((item, idx) => (
-                <li key={item.id} style={{ listStyle: 'none' }}>
-                  <article
-                    style={styles.menuCard}
-                    className="reveal-on-scroll hover-lift"
-                    data-animate="fade-up"
-                    data-animate-delay={`${idx * 40}ms`}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 10px 24px rgba(37,99,235,0.12)';
-                      e.currentTarget.style.borderColor = 'rgba(37,99,235,0.35)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'none';
-                      e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
-                      e.currentTarget.style.borderColor = 'rgba(17,24,39,0.06)';
-                    }}
-                    aria-label={`${item.name}, priced at $${Number(item.price).toFixed(2)}`}
-                  >
-                    <div style={styles.menuImgWrap} aria-hidden>
-                      <img
-                        src={item.image || 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop'}
-                        alt={item.name}
-                        style={styles.menuImg}
-                        loading="lazy"
-                      />
-                    </div>
-                    <div style={styles.menuContentCol}>
-                      <div style={styles.menuNameRow}>
-                        <h3 style={styles.menuName}>{item.name}</h3>
-                        <span style={styles.priceTag}>${Number(item.price).toFixed(2)}</span>
-                      </div>
+            <>
+              {/* aria-live region for add-to-cart feedback (screen-reader only) */}
+              <div className="sr-only" aria-live="polite" aria-atomic="true">
+                {announce}
+              </div>
 
-                      {item.description ? (
-                        <p style={styles.menuDesc}>{item.description}</p>
-                      ) : null}
-
-                      <div style={styles.controlRow} aria-label="Customization options">
-                        {/* Size select if provided */}
-                        {item.options && item.options.size && item.options.size.values && (
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ fontSize: 12, color: '#374151', fontWeight: 800 }}>
-                              {item.options.size.label || 'Size'}:
-                            </span>
-                            <select
-                              style={styles.select}
-                              value={(selections[item.id]?.size) || item.options.size.values[0]}
-                              onChange={(e) => {
-                                const v = e.target.value;
-                                setSelections((prev) => ({
-                                  ...prev,
-                                  [item.id]: {
-                                    ...(prev[item.id] || {}),
-                                    size: v,
-                                    quantity: Math.max(1, Number(prev[item.id]?.quantity) || 1),
-                                    addons: prev[item.id]?.addons || new Set()
-                                  }
-                                }));
-                              }}
-                              aria-label={`${item.name} size`}
-                            >
-                              {item.options.size.values.map((opt) => (
-                                <option key={opt} value={opt}>{opt}</option>
-                              ))}
-                            </select>
-                          </label>
-                        )}
-
-                        {/* Add-ons checkboxes if provided */}
-                        {item.options && item.options.addons && item.options.addons.values && (
-                          <div style={styles.checkboxGroup} role="group" aria-label={item.options.addons.label || 'Add-ons'}>
-                            <span style={{ fontSize: 12, color: '#374151', fontWeight: 800 }}>
-                              {item.options.addons.label || 'Add-ons'}:
-                            </span>
-                            {item.options.addons.values.map((ad) => {
-                              const selectedSet = selections[item.id]?.addons || new Set();
-                              const checked = selectedSet.has(ad);
-                              return (
-                                <label key={ad} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    onChange={(e) => {
-                                      setSelections((prev) => {
-                                        const existing = prev[item.id] || {};
-                                        const nextSet = new Set(existing.addons || []);
-                                        if (e.target.checked) nextSet.add(ad);
-                                        else nextSet.delete(ad);
-                                        return {
-                                          ...prev,
-                                          [item.id]: {
-                                            ...existing,
-                                            addons: nextSet,
-                                            quantity: Math.max(1, Number(existing.quantity) || 1),
-                                            size: existing.size || (item.options?.size?.values?.[0])
-                                          }
-                                        };
-                                      });
-                                    }}
-                                    aria-label={`${ad} add-on`}
-                                  />
-                                  {ad}
-                                </label>
-                              );
-                            })}
+              <ul className="menu-grid" aria-label="Menu item list">
+                {menu.map((item, idx) => (
+                  <li key={item.id} style={{ listStyle: 'none' }}>
+                    <article
+                      className="menu-card reveal-on-scroll"
+                      data-animate="fade-up"
+                      data-animate-delay={`${idx * 40}ms`}
+                      aria-label={`${item.name}, priced at $${Number(item.price || 0).toFixed(2)}`}
+                    >
+                      <div className="menu-media" aria-hidden>
+                        <img
+                          className="menu-image"
+                          src={item.image || 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop'}
+                          alt=""
+                          loading="lazy"
+                        />
+                        {item.tag?.label ? (
+                          <div
+                            className={`menu-ribbon ${item.tag.tone === 'amber' ? 'is-amber' : 'is-blue'}`}
+                            aria-hidden="true"
+                          >
+                            {item.tag.label}
                           </div>
-                        )}
-
-                        {/* Quantity input always */}
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: 12, color: '#374151', fontWeight: 800 }}>Qty:</span>
-                          <input
-                            type="number"
-                            min={1}
-                            step={1}
-                            style={styles.qtyInput}
-                            value={Math.max(1, Number(selections[item.id]?.quantity) || 1)}
-                            onChange={(e) => {
-                              const v = Math.max(1, Number(e.target.value) || 1);
-                              setSelections((prev) => ({
-                                ...prev,
-                                [item.id]: {
-                                  ...(prev[item.id] || {}),
-                                  quantity: v,
-                                  addons: prev[item.id]?.addons || new Set(),
-                                  size: prev[item.id]?.size || (item.options?.size?.values?.[0])
-                                }
-                              }));
-                            }}
-                            aria-label={`Quantity for ${item.name}`}
-                          />
-                        </label>
-
-                        <button
-                          type="button"
-                          style={styles.addBtn}
-                          onClick={(e) => {
-                            const sel = selections[item.id] || {};
-                            const qty = Math.max(1, Number(sel.quantity) || 1);
-                            const size = sel.size || (item.options?.size?.values?.[0]);
-                            const addonsArray = sel.addons ? Array.from(sel.addons) : [];
-
-                            if (qty < 1 || Number.isNaN(qty)) {
-                              window.alert('Please enter a valid quantity.');
-                              return;
-                            }
-
-                            // Subtle click feedback
-                            e.currentTarget.style.transform = 'translateY(1px) scale(0.98)';
-                            setTimeout(() => {
-                              e.currentTarget.style.transform = 'none';
-                            }, 120);
-
-                            addToCart({
-                              restaurantId: restaurant.id,
-                              menuItemId: item.id,
-                              name: item.name,
-                              unitPrice: Number(item.price) || 0,
-                              quantity: qty,
-                              ...(size ? { size } : {}),
-                              ...(addonsArray.length ? { addons: addonsArray } : {})
-                            });
-
-                            window.alert(`Added ${qty} x ${item.name}${size ? ' (' + size + ')' : ''} to cart.`);
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.95'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'none'; }}
-                          aria-label={`Add ${item.name} to cart`}
-                        >
-                          Add to Cart
-                        </button>
+                        ) : null}
                       </div>
-                    </div>
-                  </article>
-                </li>
-              ))}
-            </ul>
+
+                      <div className="menu-body">
+                        <header className="menu-head">
+                          <h3 className="menu-title">{item.name}</h3>
+                          <span className="price-chip">${Number(item.price || 0).toFixed(2)}</span>
+                        </header>
+
+                        {item.description ? <p className="menu-desc">{item.description}</p> : null}
+
+                        <div className="menu-actions">
+                          {item.options ? (
+                            <button
+                              type="button"
+                              className="btn-outline-ocean"
+                              aria-expanded={!!openCustom[item.id]}
+                              aria-controls={`options-${item.id}`}
+                              onClick={() => toggleCustomize(item.id)}
+                            >
+                              {openCustom[item.id] ? 'Hide options' : 'Customize'}
+                            </button>
+                          ) : (
+                            <span className="menu-meta-hint" aria-hidden>
+                              No customization
+                            </span>
+                          )}
+
+                          <div className="qty-wrap" role="group" aria-label={`Quantity for ${item.name}`}>
+                            <label className="field-label" htmlFor={`qty-${item.id}`}>Qty</label>
+                            <input
+                              id={`qty-${item.id}`}
+                              type="number"
+                              min={1}
+                              step={1}
+                              className="field-input qty"
+                              value={Math.max(1, Number(selections[item.id]?.quantity) || 1)}
+                              onChange={(e) => setQty(item, e.target.value)}
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            className="btn-ocean"
+                            disabled={!!adding[item.id]}
+                            aria-busy={!!adding[item.id]}
+                            onClick={(e) => onAddToCart(e, item)}
+                            aria-label={`Add ${item.name} to cart`}
+                          >
+                            {adding[item.id] ? 'Adding…' : 'Add to Cart'}
+                          </button>
+                        </div>
+
+                        {item.options ? (
+                          <div
+                            id={`options-${item.id}`}
+                            className={`options-panel ${openCustom[item.id] ? 'is-open' : ''}`}
+                            aria-hidden={!openCustom[item.id]}
+                          >
+                            {/* Size select if provided */}
+                            {item.options.size?.values?.length ? (
+                              <div className="option-row">
+                                <label className="field-label" htmlFor={`size-${item.id}`}>
+                                  {item.options.size.label || 'Size'}
+                                </label>
+                                <select
+                                  id={`size-${item.id}`}
+                                  className="field-input"
+                                  value={(selections[item.id]?.size) || item.options.size.values[0]}
+                                  onChange={(e) => setSize(item, e.target.value)}
+                                  aria-label={`${item.name} size`}
+                                >
+                                  {item.options.size.values.map((opt) => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            ) : null}
+
+                            {/* Add-ons checkboxes if provided */}
+                            {item.options.addons?.values?.length ? (
+                              <fieldset className="option-row">
+                                <legend className="field-label">
+                                  {item.options.addons.label || 'Add-ons'}
+                                </legend>
+                                <div className="checkbox-group">
+                                  {item.options.addons.values.map((ad) => {
+                                    const selectedSet = selections[item.id]?.addons || new Set();
+                                    const checked = selectedSet.has(ad);
+                                    return (
+                                      <label key={ad} className="checkbox-label">
+                                        <input
+                                          type="checkbox"
+                                          checked={checked}
+                                          onChange={(e) => toggleAddon(item, ad, e.target.checked)}
+                                          aria-label={`${ad} add-on`}
+                                        />
+                                        <span>{ad}</span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              </fieldset>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    </article>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
         </section>
       </div>
