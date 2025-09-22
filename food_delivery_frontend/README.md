@@ -1,82 +1,58 @@
-# Lightweight React Template for KAVIA
+# Food Delivery Frontend (Local JSON Storage)
 
-This project provides a minimal React template with a clean, modern UI and minimal dependencies.
+A lightweight React frontend that simulates backend persistence using the browser's `localStorage`. This initial structure focuses on a modular data layer with CRUD operations for Users, Restaurants, Menus, and Orders.
 
-## Features
+## Quick Start
 
-- **Lightweight**: No heavy UI frameworks - uses only vanilla CSS and React
-- **Modern UI**: Clean, responsive design with KAVIA brand styling
-- **Fast**: Minimal dependencies for quick loading times
-- **Simple**: Easy to understand and modify
+- `npm start` – run locally at http://localhost:3000
+- The app seeds example data on first load and demonstrates the data layer in the console and a small debug panel.
 
-## Getting Started
+## Data Model and Storage
 
-In the project directory, you can run:
+- Backed by a single JSON object in `localStorage` under key `fd_app_state_v1`.
+- Entities:
+  - `users`: `{ id, name, email }`
+  - `restaurants`: `{ id, name, cuisine, rating }`
+  - `menus`: `{ id, restaurantId, name, price, description }`
+  - `orders`: `{ id, userId, restaurantId, items: [{menuItemId, quantity, unitPrice}], status, total, createdAt }`
 
-### `npm start`
+Storage helper: `src/storage/localStore.js`
 
-Runs the app in development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Public API
 
-### `npm test`
+All public functions are marked with `PUBLIC_INTERFACE` and include docstrings.
 
-Launches the test runner in interactive watch mode.
+- App State
+  - `getAppState()`
+  - `resetToSeed()`
+- Users
+  - `getUsers()`, `getUserById(id)`, `createUser({ name, email })`, `updateUser(id, patch)`, `deleteUser(id)`
+- Restaurants
+  - `getRestaurants()`, `getRestaurantById(id)`, `createRestaurant({...})`, `updateRestaurant(id, patch)`, `deleteRestaurant(id)`
+- Menus
+  - `getMenus()`, `getMenusByRestaurant(restaurantId)`, `getMenuItemById(id)`, `createMenuItem({...})`, `updateMenuItem(id, patch)`, `deleteMenuItem(id)`
+- Orders
+  - `getOrders()`, `getOrdersByUser(userId)`, `getOrderById(id)`, `createOrder({...})`, `updateOrderStatus(id, status)`, `deleteOrder(id)`
 
-### `npm run build`
+### Example Usage
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+See `src/App.js` for a mounted effect that:
+- Resets seed data,
+- Creates a sample user,
+- Places an order against the first restaurant/menu item,
+- Logs snapshots to the console and shows a compact debug summary.
 
-## Customization
-
-### Colors
-
-The main brand colors are defined as CSS variables in `src/App.css`:
-
-```css
-:root {
-  --kavia-orange: #E87A41;
-  --kavia-dark: #1A1A1A;
-  --text-color: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.7);
-  --border-color: rgba(255, 255, 255, 0.1);
-}
+To try ad-hoc calls, you can import functions in any component:
+```js
+import { getUsers, createOrder } from './storage/localStore';
 ```
 
-### Components
+## Extensibility
 
-This template uses pure HTML/CSS components instead of a UI framework. You can find component styles in `src/App.css`. 
+- This storage layer is deliberately small and synchronous for clarity.
+- It can be adapted to a Promise-based API without changing call sites significantly.
+- Replace the implementation with real API calls later while keeping the same exported interface.
 
-Common components include:
-- Buttons (`.btn`, `.btn-large`)
-- Container (`.container`)
-- Navigation (`.navbar`)
-- Typography (`.title`, `.subtitle`, `.description`)
+## Styling
 
-## Learn More
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+The template uses simple CSS variables in `src/App.css` for light/dark themes.
